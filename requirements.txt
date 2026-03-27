@@ -1,8 +1,5 @@
-tensorflow
-numpy>=1.21
-pillow>=9.0
-h5py>=3.7
-fastapi
-uvicorn[standard]
-python-multipart
-gunicorn==21.2.0
+flask
+gunicorn
+numpy
+pandas
+tensorflow-cpu==2.15.0
