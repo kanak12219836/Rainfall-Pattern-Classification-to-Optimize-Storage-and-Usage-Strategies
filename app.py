@@ -1,5 +1,4 @@
 import io
-import uvicorn
 import numpy as np
 from fastapi import FastAPI, File, UploadFile
 from fastapi.responses import JSONResponse
@@ -8,29 +7,32 @@ import tensorflow as tf
 
 app = FastAPI(title="Rainfall Pattern Classification API")
 
-
 MODEL_PATH = "rainfall_model.h5"
 
-# Load the trained model once at startup
+#  Load model once at startup
 try:
     model = tf.keras.models.load_model(MODEL_PATH)
+    print("✅ Model loaded successfully")
 except Exception as e:
     model = None
-    print(f"Error loading model from {MODEL_PATH}: {e}")
+    print(f"❌ Error loading model from {MODEL_PATH}: {e}")
 
-# Update to your actual class names in correct order
+#  Class labels
 CLASS_NAMES = ["Light", "Medium", "Heavy"]
 
-# Update to the image size used in your training script
+#  Image size (same as training)
 IMG_SIZE = (224, 224)
 
 
 def preprocess_image(image_bytes: bytes) -> np.ndarray:
-    image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
-    image = image.resize(IMG_SIZE)
-    img_array = np.array(image) / 255.0
-    img_array = np.expand_dims(img_array, axis=0)
-    return img_array
+    try:
+        image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
+        image = image.resize(IMG_SIZE)
+        img_array = np.array(image) / 255.0
+        img_array = np.expand_dims(img_array, axis=0)
+        return img_array
+    except Exception as e:
+        raise ValueError(f"Image preprocessing failed: {e}")
 
 
 @app.get("/")
@@ -43,13 +45,18 @@ async def predict(file: UploadFile = File(...)):
     if model is None:
         return JSONResponse(
             status_code=500,
-            content={"error": f"Model not loaded. Check {MODEL_PATH} exists on server."}
+            content={"error": f"Model not loaded. Ensure {MODEL_PATH} exists in root directory."}
         )
 
     try:
         file_bytes = await file.read()
+
+        # preprocess image
         img_array = preprocess_image(file_bytes)
+
+        # prediction
         preds = model.predict(img_array)
+
         class_idx = int(np.argmax(preds[0]))
         confidence = float(np.max(preds[0]))
         predicted_label = CLASS_NAMES[class_idx]
@@ -60,12 +67,9 @@ async def predict(file: UploadFile = File(...)):
             "class_index": class_idx,
             "classes": CLASS_NAMES,
         }
+
     except Exception as e:
         return JSONResponse(
             status_code=400,
-            content={"error": str(e)}
+            content={"error": f"Prediction failed: {str(e)}"}
         )
-
-
-if __name__ == "__main__":
-    uvicorn.run("app:app", host="0.0.0.0", port=8000)
