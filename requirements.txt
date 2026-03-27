@@ -3,3 +3,6 @@ numpy>=1.21
 matplotlib>=3.5
 pillow>=9.0
 h5py>=3.7
+fastapi
+uvicorn[standard]
+python-multipart
