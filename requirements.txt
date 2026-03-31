@@ -1,5 +1,5 @@
-fastapi
-uvicorn
-numpy
-pillow
+fastapi==0.111.0
+uvicorn[standard]==0.30.0
+numpy==1.26.4
+pillow==10.3.0
 tensorflow-cpu==2.15.0
