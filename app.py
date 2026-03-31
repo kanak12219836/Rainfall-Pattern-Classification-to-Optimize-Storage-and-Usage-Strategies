@@ -9,18 +9,18 @@ app = FastAPI(title="Rainfall Pattern Classification API")
 
 MODEL_PATH = "rainfall_model.h5"
 
-#  Load model once at startup
+# Load model once at startup
 try:
     model = tf.keras.models.load_model(MODEL_PATH)
-    print("✅ Model loaded successfully")
+    print(" Model loaded successfully")
 except Exception as e:
     model = None
-    print(f"❌ Error loading model from {MODEL_PATH}: {e}")
+    print(f" Error loading model from {MODEL_PATH}: {e}")
 
-#  Class labels
+# Class labels
 CLASS_NAMES = ["Light", "Medium", "Heavy"]
 
-#  Image size (same as training)
+# Image size (same as training)
 IMG_SIZE = (224, 224)
 
 
@@ -51,12 +51,11 @@ async def predict(file: UploadFile = File(...)):
     try:
         file_bytes = await file.read()
 
-        # preprocess image
+        # Preprocess image
         img_array = preprocess_image(file_bytes)
 
-        # prediction
+        # Prediction
         preds = model.predict(img_array)
-
         class_idx = int(np.argmax(preds[0]))
         confidence = float(np.max(preds[0]))
         predicted_label = CLASS_NAMES[class_idx]
@@ -67,7 +66,6 @@ async def predict(file: UploadFile = File(...)):
             "class_index": class_idx,
             "classes": CLASS_NAMES,
         }
-
     except Exception as e:
         return JSONResponse(
             status_code=400,
