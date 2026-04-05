@@ -4,31 +4,35 @@ from fastapi import FastAPI, File, UploadFile
 from fastapi.responses import JSONResponse
 import tensorflow as tf
 
-app = FastAPI(title="Rainfall Pattern Classification API")
+app = FastAPI(title="Rainfall Pattern Classification API (Xception)")
 
-MODEL_PATH = "rainfall_model.h5"
+# 1. Model path (Xception ka best model yahan save karke upload karo)
+MODEL_PATH = "xception_rainfall_model.h5"
 
 try:
     model = tf.keras.models.load_model(MODEL_PATH)
+    print("Xception model loaded successfully.")
 except Exception as e:
     model = None
     print(f"Error loading model: {e}")
 
+# 2. Classes & image size (tumhare project ke hisaab se)
 CLASS_NAMES = ["Light", "Medium", "Heavy"]
-IMG_SIZE = (224, 224)
+IMG_SIZE = (224, 224)  # Xception ke training me jo size use kiya tha, wahi rakho
 
 
 def preprocess_image(image_bytes: bytes) -> np.ndarray:
-    image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
-    image = image.resize(IMG_SIZE)
-    arr = np.array(image) / 255.0
-    arr = np.expand_dims(arr, axis=0)
-    return arr
+    # Bytes -> tensor
+    img = tf.io.decode_image(image_bytes, channels=3, expand_animations=False)
+    img = tf.image.resize(img, IMG_SIZE)
+    img = tf.cast(img, tf.float32) / 255.0
+    img = tf.expand_dims(img, axis=0)  # (1, H, W, 3)
+    return img
 
 
 @app.get("/")
 def root():
-    return {"message": "Rainfall Pattern Classification API is running"}
+    return {"message": "Rainfall Pattern Classification API is running (Xception model)"}
 
 
 @app.post("/predict")
@@ -36,7 +40,7 @@ async def predict(file: UploadFile = File(...)):
     if model is None:
         return JSONResponse(
             status_code=500,
-            content={"error": f"Model not loaded. Ensure {MODEL_PATH} is present."},
+            content={"error": f"Model not loaded. Ensure {MODEL_PATH} is present and valid Xception model."},
         )
 
     try:
