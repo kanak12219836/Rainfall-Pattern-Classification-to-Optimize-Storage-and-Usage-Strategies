@@ -2,7 +2,6 @@ import io
 import numpy as np
 from fastapi import FastAPI, File, UploadFile
 from fastapi.responses import JSONResponse
-from PIL import Image
 import tensorflow as tf
 
 app = FastAPI(title="Rainfall Pattern Classification API")
