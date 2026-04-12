@@ -1,58 +1,51 @@
-import io
+import tensorflow as tf
 import numpy as np
 from fastapi import FastAPI, File, UploadFile
-from fastapi.responses import JSONResponse
 from PIL import Image
-import tensorflow as tf
+import io
 
-app = FastAPI(title="Rainfall Pattern Classification API")
+# Initialize app
+app = FastAPI()
 
-# Load the best performing model (Xception)
-MODEL_PATH = "models/xception_model.h5"
-try:
-    model = tf.keras.models.load_model(MODEL_PATH)
-except Exception as e:
-    model = None
-    print(f"[ERROR] Could not load model: {e}")
+# Load model
+MODEL_PATH = "models_trained/xception_model.h5"
+model = tf.keras.models.load_model(MODEL_PATH)
 
-CLASS_NAMES = ["Light", "Medium", "Heavy"]  # Update according to your labels
-IMG_SIZE = (224, 224)  # Xception input size
+# Class labels (update if different)
+CLASS_NAMES = ["heavy", "medium", "light"]
 
-def preprocess_image(image_bytes: bytes) -> np.ndarray:
-    try:
-        image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
-    except Exception:
-        raise ValueError("Invalid image")
-    image = image.resize(IMG_SIZE)
-    arr = np.array(image) / 255.0
-    return np.expand_dims(arr, axis=0)
+# Image preprocessing function
+def preprocess_image(image: Image.Image):
+    image = image.resize((224, 224))  # same as training
+    image = np.array(image) / 255.0   # normalize
+    image = np.expand_dims(image, axis=0)
+    return image
 
+# Root endpoint
 @app.get("/")
-def root():
-    return {"message": "Rainfall Pattern Classification API is running"}
+def home():
+    return {"message": "Rainfall Classification API is running 🚀"}
 
+# Prediction endpoint
 @app.post("/predict")
 async def predict(file: UploadFile = File(...)):
-    if model is None:
-        return JSONResponse(status_code=500, content={"error": "Model not loaded."})
-
     try:
-        content = await file.read()
-        img = preprocess_image(content)
-        preds = model.predict(img)
+        # Read image
+        contents = await file.read()
+        image = Image.open(io.BytesIO(contents)).convert("RGB")
 
-        if preds is None or preds.shape[0] == 0:
-            raise ValueError("Prediction failed")
+        # Preprocess
+        processed_image = preprocess_image(image)
 
-        idx = int(np.argmax(preds[0]))
-        conf = float(np.max(preds[0]))
-        label = CLASS_NAMES[idx]
+        # Predict
+        predictions = model.predict(processed_image)
+        predicted_class = CLASS_NAMES[np.argmax(predictions)]
+        confidence = float(np.max(predictions))
 
         return {
-            "predicted_class": label,
-            "confidence": conf,
-            "class_index": idx,
-            "classes": CLASS_NAMES,
+            "prediction": predicted_class,
+            "confidence": confidence
         }
+
     except Exception as e:
-        return JSONResponse(status_code=400, content={"error": str(e)})
+        return {"error": str(e)}
