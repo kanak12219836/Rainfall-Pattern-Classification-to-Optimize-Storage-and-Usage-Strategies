@@ -1,0 +1,11 @@
+tensorflow==2.18.0
+numpy 
+pillow==10.4.0
+keras==3.9.0
+matplotlib==3.9.2
+seaborn==0.13.2
+scikit-learn==1.6.1
+uvicorn 
+fastapi
+python-mutlipart
+streamlit
